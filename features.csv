@@ -1,0 +1,12 @@
+feature_extractor,features_dir
+mean-virchow2,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_224px_0px_overlap/slide_features_mean-virchow2
+mean-phikon_v2,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_224px_0px_overlap/slide_features_mean-phikon_v2
+mean-virchow,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_224px_0px_overlap/slide_features_mean-virchow
+mean-ctranspath,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_256px_0px_overlap/slide_features_mean-ctranspath
+mean-resnet50,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_256px_0px_overlap/slide_features_mean-resnet50
+mean-uni_v1,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_256px_0px_overlap/slide_features_mean-uni_v1
+mean-uni_v2,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_256px_0px_overlap/slide_features_mean-uni_v2
+mean-conch_v15,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_512px_0px_overlap/slide_features_mean-conch_v15
+titan,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_512px_0px_overlap/slide_features_titan
+prism,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_224px_0px_overlap/slide_features_prism
+chief,/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/20x_256px_0px_overlap/slide_features_chief
