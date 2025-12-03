@@ -1,4 +1,4 @@
-dataset: './params/classified_MKI67_ESR1.csv'
+dataset: './params/class_MKI67_ESR1.csv'
 features: "./params/features.csv"
 outdir: "./results_esr1_class/"
 target: "ESR1"

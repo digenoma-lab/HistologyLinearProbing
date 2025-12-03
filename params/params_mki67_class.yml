@@ -1,5 +1,5 @@
-dataset: './params/classified_MKI67_ESR1.csv'
+dataset: './params/class_MKI67_ESR1.csv'
 features: "./params/features.csv"
 outdir: "./results_mki67_class/"
-target: "ESR1"
+target: "MKI67"
 task: "classification"
