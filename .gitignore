@@ -2,3 +2,5 @@
 .nextflow*
 work/
 results/
+results_esr1/
+results_mki67/

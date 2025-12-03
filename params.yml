@@ -1,0 +1,4 @@
+dataset: '/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/data/tcga_gdc/tasks/Gene_expr_MKI67_ESR1.csv'
+target: "ESR1"
+features: "./features.csv"
+outdir: "./results_esr1/"
