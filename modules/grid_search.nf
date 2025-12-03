@@ -17,21 +17,25 @@ process import_features {
 }
 
 process grid_search {
-    publishDir "${params.outdir}/${feature_extractor}/${model}", mode: 'copy'
+    publishDir "${params.outdir}/cv_result/", mode: 'copy', pattern: "*.cv_result.csv"
+    publishDir "${params.outdir}/test_metrics/", mode: 'copy', pattern: "*.test_metrics.csv"
+    publishDir "${params.outdir}/test_predictions/", mode: 'copy', pattern: "*.test_predictions.csv"
     input:
         tuple path(dataset), val(feature_extractor)
         path(script)
-        val(model)
+        each model
     output:
-        tuple path("cv_result.csv"), path("test_metrics.csv"), path("test_predictions.csv"), emit: results
+        path("${feature_extractor}.${model}.cv_result.csv"), emit: cv_results
+        path("${feature_extractor}.${model}.test_metrics.csv"), emit: test_metrics
+        path("${feature_extractor}.${model}.test_predictions.csv"), emit: test_predictions
     script:
         """
-        python -u ${script} $dataset $model
+        python -u ${script} $dataset $model $feature_extractor
         """
     stub:
         """
-        touch cv_result.csv
-        touch test_metrics.csv
-        touch test_predictions.csv
+        touch ${feature_extractor}.${model}.cv_result.csv
+        touch ${feature_extractor}.${model}.test_metrics.csv
+        touch ${feature_extractor}.${model}.test_predictions.csv
         """
-    }
+}

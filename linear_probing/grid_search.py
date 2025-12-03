@@ -11,6 +11,7 @@ from sklearn.metrics import (
     root_mean_squared_error,
 )
 import h5py
+import numpy as np
 
 def eval_test_metrics(y_true, y_pred):
     """Return test metrics as a single-row DataFrame."""
@@ -22,13 +23,34 @@ def eval_test_metrics(y_true, y_pred):
             "rmse": [root_mean_squared_error(y_true, y_pred)],
         }
     )
+def iqr(X, y):
+    """
+    Remove outliers in y using the IQR rule and keep X aligned.
+    X: numpy array of shape (n_samples, n_features)
+    y: 1D numpy array of shape (n_samples,)
+    """
+    y = np.asarray(y)
+    X = np.asarray(X)
+
+    y_q1 = np.quantile(y, 0.25)
+    y_q3 = np.quantile(y, 0.75)
+    iqr_factor = 1.5 * (y_q3 - y_q1)
+    y_min = y_q1 - iqr_factor
+    y_max = y_q3 + iqr_factor
+
+    mask = (y >= y_min) & (y <= y_max)
+    return X[mask], y[mask]
+
 # Arguments: dataset.h5 cv_results.csv test_metrics.csv
 dataset_path = sys.argv[1]
 model = sys.argv[2]
+feature_extractor = sys.argv[3]
 
 with h5py.File(dataset_path, "r") as f:
     X_features = f["features"][:]
     y = f["target"][:]
+
+X_features, y = iqr(X_features, y)
 
 X_train, X_test, y_train, y_test = train_test_split(
     X_features, y, test_size=0.2, random_state=42
@@ -36,8 +58,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 if model == "ridge":
     param_grid = {
-        "pca__n_components": [0.7, 0.8, 0.9],
-        "ridge__alpha": [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1],
+        "pca__n_components": [0.8, 0.9],
+        "ridge__alpha": [1e-1, 1],
     }
 
     pipeline = Pipeline(
@@ -48,8 +70,8 @@ if model == "ridge":
     )
 elif model == "lasso":
     param_grid = {
-        "pca__n_components": [0.7, 0.8, 0.9],
-        "lasso__alpha": [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1],
+        "pca__n_components": [0.8, 0.9],
+        "lasso__alpha": [1e-1, 1],
     }
     pipeline = Pipeline(
         [
@@ -59,9 +81,9 @@ elif model == "lasso":
     )
 elif model == "elastic_net":
     param_grid = {
-        "pca__n_components": [0.7, 0.8, 0.9],
-        "elasticnet__alpha": [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1],
-        "elasticnet__l1_ratio": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        "pca__n_components": [0.8, 0.9],
+        "elasticnet__alpha": [1e-1, 1],
+        "elasticnet__l1_ratio": [ 0.2, 0.4, 0.6, 0.8 ],
     }
     pipeline = Pipeline(
         [
@@ -71,7 +93,7 @@ elif model == "elastic_net":
     )
 elif model == "linear_regression":
     param_grid = {
-        "pca__n_components": [0.7, 0.8, 0.9],
+        "pca__n_components": [0.8, 0.9],
     }
     pipeline = Pipeline(
         [
@@ -95,14 +117,14 @@ grid_search = GridSearchCV(
 grid_search.fit(X_train, y_train)
 
 cv_results = pd.DataFrame(grid_search.cv_results_)
-cv_results.to_csv(f"cv_result.csv", index=False)
+cv_results.to_csv(f"{feature_extractor}.{model}.cv_result.csv", index=False)
 
 best_model = grid_search.best_estimator_
 best_model.fit(X_train, y_train)
 y_test_pred = best_model.predict(X_test)
 
 test_metrics = eval_test_metrics(y_test, y_test_pred)
-test_metrics.to_csv(f"test_metrics.csv", index=False)
+test_metrics.to_csv(f"{feature_extractor}.{model}.test_metrics.csv", index=False)
 
 y = pd.DataFrame({"y_true": y_test, "y_pred": y_test_pred})
-y.to_csv(f"test_predictions.csv", index=False)
+y.to_csv(f"{feature_extractor}.{model}.test_predictions.csv", index=False)
