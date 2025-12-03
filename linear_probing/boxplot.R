@@ -70,7 +70,7 @@ main <- function(results_dir, output_path = "boxplot.png") {
     theme_minimal() +
     labs(x="Feature extractor", y="R2", title="Benchmark")
 
-  ggsave(output_path, plot = p, width = 12, height = 6, dpi = 300)
+  ggsave(output_path, plot = p, width = 15, height = 6, dpi = 300)
 }
 
 args <- commandArgs(trailingOnly = TRUE)
