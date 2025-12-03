@@ -12,7 +12,7 @@ process import_features {
         """
     stub:
         """
-        touch dataset.h5
+        touch "${feature_extractor}.h5"
         """
 }
 

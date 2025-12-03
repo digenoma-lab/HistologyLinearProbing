@@ -79,19 +79,7 @@ elif model == "lasso":
             ("lasso", Lasso()),
         ]
     )
-elif model == "elastic_net":
-    param_grid = {
-        "pca__n_components": [0.8, 0.9],
-        "elasticnet__alpha": [1e-1, 1],
-        "elasticnet__l1_ratio": [ 0.2, 0.4, 0.6, 0.8 ],
-    }
-    pipeline = Pipeline(
-        [
-            ("pca", PCA()),
-            ("elasticnet", ElasticNet()),
-        ]
-    )
-elif model == "linear_regression":
+elif model == "linear":
     param_grid = {
         "pca__n_components": [0.8, 0.9],
     }
@@ -110,7 +98,7 @@ grid_search = GridSearchCV(
     cv=5,
     scoring=["r2", "neg_mean_squared_error"],
     verbose=3,
-    n_jobs=-1,
+    n_jobs=16,
     return_train_score=True,
     refit="r2",
 )

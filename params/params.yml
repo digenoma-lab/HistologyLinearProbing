@@ -1,4 +1,0 @@
-dataset: './params/Gene_expr_MKI67_ESR1.csv'
-features: "./params/features.csv"
-outdir: "./results_esr1/"
-target: "ESR1"
