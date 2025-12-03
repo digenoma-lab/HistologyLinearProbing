@@ -1,6 +1,6 @@
 ## HistologyLinearProbing
 
-**Linear probing pipeline** for histopathology to evaluate different **feature extractors** (foundation models) using simple linear models (ridge, lasso and linear regression) on genes of interest (for example, *MKI67* and *ESR1*).
+**Linear probing pipeline** for histopathology to evaluate different **feature extractors** (foundation models) using simple linear models (ridge, lasso and linear/logistic regression) on genes of interest (for example, *MKI67* and *ESR1*).
 
 The workflow is implemented in **Nextflow DSL2** and uses containers (Wave/Singularity) to run both the Python part (feature import and grid search) and the R part (visualizations).
 
@@ -14,74 +14,111 @@ The workflow is implemented in **Nextflow DSL2** and uses containers (Wave/Singu
   - Reads the list of `feature_extractor` and their paths (`params.features`).
   - Launches:
     - `import_features`: builds `.h5` files with features + target.
-    - `grid_search_workflow`: trains linear models per feature extractor.
-    - `boxplot`: generates a boxplot comparing model performance.
+    - `grid_search_workflow`: runs grid-search for regression or binary classification, depending on `params.task`.
+    - `summary_plot`: generates a global performance boxplot (R² or ROC AUC).
 
 - **`modules/grid_search.nf`**
   - `process import_features`: runs `linear_probing/import_features.py`.
-  - `process grid_search`: runs `linear_probing/grid_search.py` for each `feature_extractor × model (ridge, lasso, linear_regression)` combination and publishes:
+  - `process grid_search`: runs either the regression or classification script for each `feature_extractor × model (ridge, lasso, linear)` combination and publishes:
     - `*.cv_result.csv`
     - `*.test_metrics.csv`
     - `*.test_predictions.csv`
 
 - **`workflows/grid_search.nf`**
   - Defines the `grid_search_workflow` workflow, which:
-    - Runs `grid_search` for the models: `ridge`, `lasso`, `linear_regression`.
-    - Generates scatterplots for each prediction file with `scatter.R`.
+    - Runs `grid_search` with:
+      - `grid_search_classification.py` when `params.task == "classification"`.
+      - `grid_search_regression.py` when `params.task == "regression"`.
+    - For regression, generates scatterplots for each prediction file with `scatter.R`.
+    - For classification, generates ROC curves for each prediction file with `roc_curve.R`.
+
+- **`workflows/visualization.nf`**
+  - Defines `summary_plot`, which:
+    - For regression, calls `boxplot` with `boxplot_r2.R` (R² boxplot).
+    - For classification, calls `boxplot` with `boxplot_auc.R` (ROC AUC boxplot).
 
 - **`modules/visualization.nf`**
-  - `process scatterplot`: generates `y_true` vs `y_pred` scatterplots.
-  - `process boxplot`: generates a global R² boxplot per extractor/algorithm.
+  - `process scatterplot`: generates `y_true` vs `y_pred` scatterplots from regression outputs.
+  - `process roc_auc_curve`: generates ROC curves from classification outputs.
+  - `process boxplot`: wraps the R boxplot scripts (`boxplot_r2.R` or `boxplot_auc.R`).
 
 - **`linear_probing/`**
   - `import_features.py`: loads the clinical/expression CSV, collects features by `slide_id`, and writes one `.h5` per extractor.
-  - `grid_search.py`: applies IQR filtering, runs `GridSearchCV` with PCA + linear model, and saves results and predictions.
-  - `boxplot.R`: reads all `*cv_result.csv` and generates `boxplot.png`.
-  - `scatter.R`: reads each `*test_predictions.csv` and generates `*.scatterplot.png`.
+  - `grid_search_regression.py`: applies optional IQR filtering, runs `GridSearchCV` with PCA + linear model (ridge/lasso/elastic-net/linear regression), and saves results and predictions for regression tasks.
+  - `grid_search_classification.py`: runs `GridSearchCV` with PCA + logistic regression variants (ridge/lasso/“linear” no-penalty), and saves results and predictions for binary classification tasks.
+  - `scatter.R`: reads each regression `*test_predictions.csv` and generates `*.scatterplot.png`.
+  - `roc_curve.R`: reads each classification `*test_predictions.csv` and generates `*.roc_auc_curve.png`.
+  - `boxplot_r2.R`: reads all regression `*cv_result.csv` files and generates an R² `boxplot.png`.
+  - `boxplot_auc.R`: reads all classification `*cv_result.csv` files and generates a ROC AUC `boxplot.png`.
 
 ---
 
 ### Inputs
 
-- **Expression/metadata file** (`params.dataset` in `params/params.yml`)
+- **Expression/metadata file** (`params.dataset` in the chosen params file)
   - CSV with at least:
     - A `slide_id` column to link samples with feature files.
     - Columns with genes of interest (for example `MKI67`, `ESR1`).
 
-- **Feature list** (`params.features` in `params/params.yml`)
+- **Feature list** (`params.features` in the params file)
   - CSV with columns:
     - `feature_extractor`: model name (e.g. `mean-uni_v1`, `mean-virchow2`).
     - `features_dir`: path to the directory containing per-slide feature files (one `.h5` per `slide_id`).
 
-- **Pipeline parameters** (`params/params.yml`)
-  - Example:
-    ```yaml
-    dataset: './params/Gene_expr_MKI67_ESR1.csv'
-    features: "./params/features.csv"
-    outdir: "./results_esr1/"
-    target: "ESR1"
-    ```
-  - By changing `outdir` and `target` you can run the pipeline for different genes (for example, `results_mki67/` with `target: "MKI67"`).
+- **Pipeline parameters** (YAML files in `params/`)
+  - The key parameters are:
+    - `dataset`: path to the CSV with expression/metadata.
+    - `features`: path to the CSV with feature extractors.
+    - `outdir`: output directory for this run.
+    - `target`: column name of the gene/target variable.
+    - `task`: `"regression"` or `"classification"`.
+
+  - Examples:
+    - **ESR1 regression** (`params/params_esr1_regr.yml`):
+      ```yaml
+      dataset: './params/Gene_expr_MKI67_ESR1.csv'
+      features: "./params/features.csv"
+      outdir: "./results_esr1/"
+      target: "ESR1"
+      task: "regression"
+      ```
+    - **ESR1 binary classification** (`params/params_esr1_class.yml`):
+      ```yaml
+      dataset: './params/classified_MKI67_ESR1.csv'
+      features: "./params/features.csv"
+      outdir: "./results_esr1_class/"
+      target: "ESR1"
+      task: "classification"
+      ```
+  - Additional param files (e.g. `params_mki67_*`) allow running the same pipeline for MKI67 or other targets.
 
 ---
 
 ### Outputs
 
-All outputs are written under `params.outdir` (configured in `params/params.yml`):
+All outputs are written under `params.outdir` (configured in the selected params file):
 
 - **Grid search results**
   - `cv_result/`
-    - `feature_extractor.model.cv_result.csv`
+    - `feature_extractor.model.cv_result.csv` (full `GridSearchCV` table).
   - `test_metrics/`
-    - `feature_extractor.model.test_metrics.csv`
+    - Regression: `r2`, `mse`, `mae`, `rmse`.
+    - Classification: `accuracy`, `precision`, `recall`, `f1`, `roc_auc`.
   - `test_predictions/`
-    - `feature_extractor.model.test_predictions.csv`
+    - Regression: `feature_extractor.model.test_predictions.csv` with `y_true`, `y_pred` (continuous).
+    - Classification: `feature_extractor.model.test_predictions.csv` with `y_true`, `y_score` (score/probability for the positive class).
 
 - **Plots**
-  - `plots/boxplot.png`  
-    Distribution of R² by `feature_extractor` and `algorithm`.
-  - `plots/*.scatterplot.png`  
-    One scatterplot per `*test_predictions.csv` file (y_true vs y_pred, with R² in the title).
+  - Regression:
+    - `plots/boxplot.png` (when `task: regression`):  
+      Distribution of R² by `feature_extractor` and `algorithm`.
+    - `plots/*.scatterplot.png`:  
+      One scatterplot per regression `*test_predictions.csv` (y_true vs y_pred, with R² in the title).
+  - Classification:
+    - `plots/boxplot.png` (when `task: classification`):  
+      Distribution of ROC AUC by `feature_extractor` and `algorithm`.
+    - `plots/*.roc_auc_curve.png`:  
+      One ROC curve per classification `*test_predictions.csv` (FPR vs TPR, AUC in the title).
 
 - **Pipeline information**
   - `pipeline_info/` (timeline, report, trace, DAG HTML) generated automatically by Nextflow.
@@ -101,17 +138,21 @@ All outputs are written under `params.outdir` (configured in `params/params.yml`
 ### Basic usage
 
 1. Load the environment where Nextflow and Singularity are available.
-2. Edit `params/params.yml` (dataset, features, target, outdir).
+2. Choose or edit a params file in `params/` (dataset, features, target, outdir, task).
 3. Run the pipeline, for example:
 
 ```bash
-nextflow run main.nf -profile kutral -params-file params/params.yml
+# ESR1 regression
+nextflow run main.nf -profile kutral -params-file params/params_esr1_regr.yml
+
+# ESR1 binary classification
+nextflow run main.nf -profile kutral -params-file params/params_esr1_class.yml
 ```
 
 For local execution (without SLURM), you can use the `local` profile defined in `nextflow.config`:
 
 ```bash
-nextflow run main.nf -profile local -params-file params/params.yml
+nextflow run main.nf -profile local -params-file params/params_esr1_regr.yml
 ```
 
 ---
