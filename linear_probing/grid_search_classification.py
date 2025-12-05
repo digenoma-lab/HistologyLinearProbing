@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -96,6 +97,19 @@ elif model == "linear":
                     max_iter=1000,
                 ),
             ),
+        ]
+    )
+elif model == "mlp":
+    param_grid = {
+        "mlp__hidden_layer_sizes": [(100,), (200,), (100, 100), (200, 200), (100, 200, 100)],
+        "mlp__activation": ["relu"],
+        "mlp__solver": ["adam"],
+        "mlp__alpha": [0.001, 0.01],
+        "mlp__max_iter": [10, 20, 30],
+    }
+    pipeline = Pipeline(
+        [
+            ("mlp", MLPClassifier(random_state=42)),
         ]
     )
 else:

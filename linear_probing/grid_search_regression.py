@@ -1,7 +1,8 @@
 import sys
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.linear_model import Ridge, Lasso, LinearRegression, ElasticNet
+from sklearn.linear_model import Ridge, Lasso, LinearRegression
+from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.decomposition import PCA
 from sklearn.metrics import (
@@ -87,6 +88,19 @@ elif model == "linear":
         [
             ("pca", PCA()),
             ("linear", LinearRegression()),
+        ]
+    )
+elif model == "mlp":
+    param_grid = {
+        "mlp__hidden_layer_sizes": [(100,), (200,), (300,), (100, 100), (200, 200), (300, 300), (300, 200, 100)],
+        "mlp__activation": ["relu"],
+        "mlp__solver": ["adam"],
+        "mlp__alpha": [0.001, 0.01],
+        "mlp__max_iter": [10, 20, 30, 40, 50, 80, 100],
+    }
+    pipeline = Pipeline(
+        [
+            ("mlp", MLPRegressor(random_state=42)),
         ]
     )
 else:
