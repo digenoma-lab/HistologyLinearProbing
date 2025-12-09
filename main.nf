@@ -25,13 +25,13 @@ workflow {
     feature_paths = feature_extractors.map { row ->
         tuple( row[1], file("${params.features_dir}${row[3]}x_${row[2]}px_${row[5]}px_overlap/slide_features_${row[1]}/"))
     }
-    script_import_features = Channel.value(file("./bin/import_features.py"))
-    script_grid_search_classification = Channel.value(file("./bin/grid_search_classification.py"))
-    script_grid_search_regression = Channel.value(file("./bin/grid_search_regression.py"))
-    script_scatterplot = Channel.value(file("./bin/scatter.R"))
-    script_roc_auc_curve = Channel.value(file("./bin/roc_curve.R"))
-    script_boxplot_r2 = Channel.value(file("./bin/boxplot_r2.R"))
-    script_boxplot_auc = Channel.value(file("./bin/boxplot_auc.R"))
+    script_import_features = Channel.value(file("${projectDir}/bin/import_features.py"))
+    script_grid_search_classification = Channel.value(file("${projectDir}/bin/grid_search_classification.py"))
+    script_grid_search_regression = Channel.value(file("${projectDir}/bin/grid_search_regression.py"))
+    script_scatterplot = Channel.value(file("${projectDir}/bin/scatter.R"))
+    script_roc_auc_curve = Channel.value(file("${projectDir}/bin/roc_curve.R"))
+    script_boxplot_r2 = Channel.value(file("${projectDir}/bin/boxplot_r2.R"))
+    script_boxplot_auc = Channel.value(file("${projectDir}/bin/boxplot_auc.R"))
 
     import_features(dataset, params.target, feature_paths, script_import_features)
     grid_search_workflow(import_features.out.dataset,
