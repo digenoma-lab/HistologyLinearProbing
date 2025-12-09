@@ -11,14 +11,15 @@ The workflow is implemented in **Nextflow DSL2** and uses containers (Wave/Singu
 - **`main.nf`**  
   Orchestrates the pipeline:
   - Reads the clinical/gene-expression dataset (`params.dataset`).
-  - Reads the list of `feature_extractor` and their paths (`params.features`).
+  - Reads the list of feature extractors from `params/feature_extractors.csv` (automatically loaded).
+  - Uses `params.features_dir` to construct feature directory paths.
   - Launches:
     - `import_features`: builds `.h5` files with features + target.
     - `grid_search_workflow`: runs grid-search for regression or binary classification, depending on `params.task`.
     - `summary_plot`: generates a global performance boxplot (R² or ROC AUC).
 
 - **`modules/grid_search.nf`**
-  - `process import_features`: runs `linear_probing/import_features.py`.
+  - `process import_features`: runs `bin/import_features.py`.
   - `process grid_search`: runs either the regression or classification script for each `feature_extractor × model (ridge, lasso, linear)` combination and publishes:
     - `*.cv_result.csv`
     - `*.test_metrics.csv`
@@ -42,10 +43,10 @@ The workflow is implemented in **Nextflow DSL2** and uses containers (Wave/Singu
   - `process roc_auc_curve`: generates ROC curves from classification outputs.
   - `process boxplot`: wraps the R boxplot scripts (`boxplot_r2.R` or `boxplot_auc.R`).
 
-- **`linear_probing/`**
+- **`bin/`**
   - `import_features.py`: loads the clinical/expression CSV, collects features by `slide_id`, and writes one `.h5` per extractor.
   - `grid_search_regression.py`: applies optional IQR filtering, runs `GridSearchCV` with PCA + linear model (ridge/lasso/elastic-net/linear regression), and saves results and predictions for regression tasks.
-  - `grid_search_classification.py`: runs `GridSearchCV` with PCA + logistic regression variants (ridge/lasso/“linear” no-penalty), and saves results and predictions for binary classification tasks.
+  - `grid_search_classification.py`: runs `GridSearchCV` with PCA + logistic regression variants (ridge/lasso/"linear" no-penalty), and saves results and predictions for binary classification tasks.
   - `scatter.R`: reads each regression `*test_predictions.csv` and generates `*.scatterplot.png`.
   - `roc_curve.R`: reads each classification `*test_predictions.csv` and generates `*.roc_auc_curve.png`.
   - `boxplot_r2.R`: reads all regression `*cv_result.csv` files and generates an R² `boxplot.png`.
@@ -55,37 +56,61 @@ The workflow is implemented in **Nextflow DSL2** and uses containers (Wave/Singu
 
 ### Inputs
 
-- **Expression/metadata file** (`params.dataset` in the chosen params file)
+- **Expression/metadata file** (`params.dataset`)
   - CSV with at least:
     - A `slide_id` column to link samples with feature files.
     - Columns with genes of interest (for example `MKI67`, `ESR1`).
+  - Example structure:
+    ```csv
+    slide_id,ESR1,MKI67
+    slide_1,0.534,0.123
+    slide_2,0.868,0.456
+    ...
+    ```
 
-- **Feature list** (`params.features` in the params file)
-  - CSV with columns:
-    - `feature_extractor`: model name (e.g. `mean-uni_v1`, `mean-virchow2`).
-    - `features_dir`: path to the directory containing per-slide feature files (one `.h5` per `slide_id`).
+- **Feature extractors configuration** (`params/feature_extractors.csv`)
+  - CSV file automatically loaded by the pipeline (located in `params/` directory).
+  - Required columns:
+    - `patch_encoder`: patch-level encoder name (e.g. `uni_v1`, `virchow`, `ctranspath`).
+    - `slide_encoder`: slide-level aggregation method (e.g. `mean-uni_v1`, `titan`, `chief`, `prism`).
+    - `patch_size`: patch size in pixels (e.g. `256`, `224`, `512`).
+    - `mag`: magnification level (e.g. `20`).
+    - `batch_size`: batch size used during feature extraction (e.g. `200`).
+    - `overlap`: overlap in pixels (e.g. `0`).
+  - Example:
+    ```csv
+    patch_encoder,slide_encoder,patch_size,mag,batch_size,overlap
+    uni_v1,mean-uni_v1,256,20,200,0
+    virchow,mean-virchow,224,20,200,0
+    ctranspath,chief,256,20,200,0
+    ```
+
+- **Features directory** (`params.features_dir`)
+  - Base directory path where feature directories are located.
+  - Feature directories follow the pattern: `{features_dir}{mag}x_{patch_size}px_{overlap}px_overlap/slide_features_{slide_encoder}/`
+  - Each feature directory should contain one `.h5` file per slide (named `{slide_id}.h5`).
 
 - **Pipeline parameters** (YAML files in `params/`)
   - The key parameters are:
     - `dataset`: path to the CSV with expression/metadata.
-    - `features`: path to the CSV with feature extractors.
-    - `outdir`: output directory for this run.
+    - `features_dir`: base directory path where feature directories are located.
+    - `outdir`: output directory for this run (default: `./results/`).
     - `target`: column name of the gene/target variable.
     - `task`: `"regression"` or `"classification"`.
 
   - Examples:
     - **ESR1 regression** (`params/params_esr1_regr.yml`):
       ```yaml
-      dataset: './params/Gene_expr_MKI67_ESR1.csv'
-      features: "./params/features.csv"
-      outdir: "./results_esr1/"
+      dataset: './params/regr_MKI67_ESR1.csv'
+      features_dir: "/path/to/features/base/directory/"
+      outdir: "./results_esr1_regr/"
       target: "ESR1"
       task: "regression"
       ```
     - **ESR1 binary classification** (`params/params_esr1_class.yml`):
       ```yaml
-      dataset: './params/classified_MKI67_ESR1.csv'
-      features: "./params/features.csv"
+      dataset: './params/class_MKI67_ESR1.csv'
+      features_dir: "/path/to/features/base/directory/"
       outdir: "./results_esr1_class/"
       target: "ESR1"
       task: "classification"
@@ -138,8 +163,9 @@ All outputs are written under `params.outdir` (configured in the selected params
 ### Basic usage
 
 1. Load the environment where Nextflow and Singularity are available.
-2. Choose or edit a params file in `params/` (dataset, features, target, outdir, task).
-3. Run the pipeline, for example:
+2. Ensure `params/feature_extractors.csv` exists and contains the feature extractor configurations you want to evaluate.
+3. Choose or edit a params file in `params/` (dataset, features_dir, target, outdir, task).
+4. Run the pipeline, for example:
 
 ```bash
 # ESR1 regression
