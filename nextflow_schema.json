@@ -1,46 +1,98 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Histology Linear Probing Pipeline Parameters",
-  "description": "Parameters for the Histology Linear Probing pipeline to evaluate feature extractors using linear models",
+  "description": "Schema for Histology Linear Probing Pipeline parameters",
   "type": "object",
-  "properties": {
-    "dataset": {
-      "type": "string",
-      "format": "file-path",
-      "description": "Path to CSV file containing expression/metadata data with slide_id and target gene columns",
-      "help_text": "CSV file with at least: a slide_id column to link samples with feature files, and columns with genes of interest (e.g. MKI67, ESR1)."
+  "definitions": {
+    "input_output_options": {
+      "title": "Input/Output Options",
+      "type": "object",
+      "description": "Define the input data and output locations",
+      "fa_icon": "fas fa-terminal",
+      "properties": {
+        "dataset": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "mimetype": "text/csv",
+          "description": "Path to CSV file containing expression/metadata data with slide_id and target gene columns",
+          "pattern": "^\\S+\\.csv$",
+          "help_text": "CSV file with at least: a slide_id column to link samples with feature files, and columns with genes of interest (e.g. MKI67, ESR1).",
+          "fa_icon": "fas fa-file-csv",
+          "errorMessage": "The dataset file path must end with .csv, must not contain spaces, and must exist."
+        },
+        "feature_extractors": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "mimetype": "text/csv",
+          "description": "Path to CSV file listing feature extractor configurations",
+          "pattern": "^\\S+\\.csv$",
+          "help_text": "CSV file with columns: patch_encoder, slide_encoder, patch_size, mag, batch_size, overlap. Defines which feature extractors to evaluate.",
+          "fa_icon": "fas fa-file-csv",
+          "errorMessage": "The feature extractors file path must end with .csv, must not contain spaces, and must exist."
+        },
+        "features_dir": {
+          "type": "string",
+          "format": "directory-path",
+          "minLength": 1,
+          "description": "Base directory path where feature directories are located",
+          "help_text": "Base directory path used to construct feature paths. Feature directories follow the pattern: {features_dir}{mag}x_{patch_size}px_{overlap}px_overlap/slide_features_{slide_encoder}/",
+          "fa_icon": "fas fa-folder-open",
+          "errorMessage": "The features directory path must be at least 1 character long."
+        },
+        "outdir": {
+          "type": "string",
+          "format": "directory-path",
+          "minLength": 1,
+          "description": "Output directory for pipeline results",
+          "default": "./results/",
+          "help_text": "Directory where all pipeline outputs will be saved. Results include grid search results (cv_result, test_metrics, test_predictions) and plots (scatterplots, ROC curves, boxplots).",
+          "fa_icon": "fas fa-folder-open",
+          "errorMessage": "The output directory path must be at least 1 character long."
+        }
+      },
+      "required": [
+        "dataset",
+        "feature_extractors",
+        "features_dir"
+      ]
     },
-    "feature_extractors": {
-      "type": "string",
-      "format": "file-path",
-      "description": "Path to CSV file listing feature extractor configurations",
-      "help_text": "CSV file with columns: patch_encoder, slide_encoder, patch_size, mag, batch_size, overlap. Defines which feature extractors to evaluate."
-    },
-    "features_dir": {
-      "type": "string",
-      "format": "directory-path",
-      "description": "Base directory path where feature directories are located",
-      "help_text": "Base directory path used to construct feature paths. Feature directories follow the pattern: {features_dir}{mag}x_{patch_size}px_{overlap}px_overlap/slide_features_{slide_encoder}/"
-    },
-    "outdir": {
-      "type": "string",
-      "format": "directory-path",
-      "description": "Output directory for pipeline results",
-      "default": "./results/",
-      "help_text": "Directory where all pipeline outputs will be saved. Results include grid search results (cv_result, test_metrics, test_predictions) and plots (scatterplots, ROC curves, boxplots)."
-    },
-    "target": {
-      "type": "string",
-      "description": "Column name of the target gene/variable to predict",
-      "help_text": "Name of the column in the dataset CSV that contains the target variable (e.g. 'ESR1', 'MKI67')."
-    },
-    "task": {
-      "type": "string",
-      "enum": ["regression", "classification"],
-      "description": "Type of machine learning task to perform",
-      "help_text": "Either 'regression' for continuous target prediction or 'classification' for binary classification tasks."
+    "ml_options": {
+      "title": "Machine Learning Options",
+      "type": "object",
+      "description": "Define the machine learning task configuration",
+      "fa_icon": "fas fa-brain",
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Column name of the target gene/variable to predict",
+          "help_text": "Name of the column in the dataset CSV that contains the target variable (e.g. 'ESR1', 'MKI67').",
+          "fa_icon": "fas fa-bullseye",
+          "errorMessage": "The target column name must be at least 1 character long and cannot be empty."
+        },
+        "task": {
+          "type": "string",
+          "enum": ["regression", "classification"],
+          "description": "Type of machine learning task to perform",
+          "help_text": "Either 'regression' for continuous target prediction or 'classification' for binary classification tasks.",
+          "fa_icon": "fas fa-tasks",
+          "errorMessage": "The task must be either 'regression' or 'classification'."
+        }
+      },
+      "required": [
+        "target",
+        "task"
+      ]
     }
   },
-  "required": ["dataset", "features", "features_dir", "target", "task"]
+  "allOf": [
+    {
+      "$ref": "#/definitions/input_output_options"
+    },
+    {
+      "$ref": "#/definitions/ml_options"
+    }
+  ]
 }
-
