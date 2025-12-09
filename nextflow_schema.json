@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Histology Linear Probing Pipeline Parameters",
+  "description": "Parameters for the Histology Linear Probing pipeline to evaluate feature extractors using linear models",
+  "type": "object",
+  "properties": {
+    "dataset": {
+      "type": "string",
+      "format": "file-path",
+      "description": "Path to CSV file containing expression/metadata data with slide_id and target gene columns",
+      "help_text": "CSV file with at least: a slide_id column to link samples with feature files, and columns with genes of interest (e.g. MKI67, ESR1)."
+    },
+    "feature_extractors": {
+      "type": "string",
+      "format": "file-path",
+      "description": "Path to CSV file listing feature extractor configurations",
+      "help_text": "CSV file with columns: patch_encoder, slide_encoder, patch_size, mag, batch_size, overlap. Defines which feature extractors to evaluate."
+    },
+    "features_dir": {
+      "type": "string",
+      "format": "directory-path",
+      "description": "Base directory path where feature directories are located",
+      "help_text": "Base directory path used to construct feature paths. Feature directories follow the pattern: {features_dir}{mag}x_{patch_size}px_{overlap}px_overlap/slide_features_{slide_encoder}/"
+    },
+    "outdir": {
+      "type": "string",
+      "format": "directory-path",
+      "description": "Output directory for pipeline results",
+      "default": "./results/",
+      "help_text": "Directory where all pipeline outputs will be saved. Results include grid search results (cv_result, test_metrics, test_predictions) and plots (scatterplots, ROC curves, boxplots)."
+    },
+    "target": {
+      "type": "string",
+      "description": "Column name of the target gene/variable to predict",
+      "help_text": "Name of the column in the dataset CSV that contains the target variable (e.g. 'ESR1', 'MKI67')."
+    },
+    "task": {
+      "type": "string",
+      "enum": ["regression", "classification"],
+      "description": "Type of machine learning task to perform",
+      "help_text": "Either 'regression' for continuous target prediction or 'classification' for binary classification tasks."
+    }
+  },
+  "required": ["dataset", "features", "features_dir", "target", "task"]
+}
+

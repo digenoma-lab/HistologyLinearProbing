@@ -10,7 +10,7 @@ include {
 
 workflow {
     dataset = Channel.value(file(params.dataset))
-    features = Channel.fromPath(params.features)
+    feature_extractors = Channel.fromPath(params.feature_extractors)
         .splitCsv(header: true, sep: ',')
         .map { row ->
             tuple(
@@ -22,7 +22,7 @@ workflow {
                 row.overlap
             )
         }
-    feature_paths = features.map { row ->
+    feature_paths = feature_extractors.map { row ->
         tuple( row[1], file("${params.features_dir}${row[3]}x_${row[2]}px_${row[5]}px_overlap/slide_features_${row[1]}/"))
     }
     script_import_features = Channel.value(file("./linear_probing/import_features.py"))
