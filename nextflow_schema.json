@@ -21,17 +21,6 @@
           "fa_icon": "fas fa-file-csv",
           "errorMessage": "The dataset file path must end with .csv, must not contain spaces, and must exist."
         },
-        "feature_extractors": {
-          "type": "string",
-          "format": "file-path",
-          "exists": true,
-          "mimetype": "text/csv",
-          "description": "Path to CSV file listing feature extractor configurations",
-          "pattern": "^\\S+\\.csv$",
-          "help_text": "CSV file with columns: patch_encoder, slide_encoder, patch_size, mag, batch_size, overlap. Defines which feature extractors to evaluate.",
-          "fa_icon": "fas fa-file-csv",
-          "errorMessage": "The feature extractors file path must end with .csv, must not contain spaces, and must exist."
-        },
         "features_dir": {
           "type": "string",
           "format": "directory-path",
@@ -54,7 +43,6 @@
       },
       "required": [
         "dataset",
-        "feature_extractors",
         "features_dir"
       ]
     },

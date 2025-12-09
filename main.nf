@@ -10,7 +10,7 @@ include {
 
 workflow {
     dataset = Channel.value(file(params.dataset))
-    feature_extractors = Channel.fromPath(params.feature_extractors)
+    feature_extractors = Channel.fromPath("${projectDir}/params/feature_extractors.csv")
         .splitCsv(header: true, sep: ',')
         .map { row ->
             tuple(
