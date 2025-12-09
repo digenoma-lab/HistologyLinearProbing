@@ -1,5 +1,6 @@
 dataset: './params/class_MKI67_ESR1.csv'
-features: "./params/features.csv"
+features: "./params/features_extractors.csv"
+features_dir: "/mnt/beegfs/labs/DiGenomaLab/Machine_Learning/cancer_histology/processed_data/trident/tcga-brca/"
 outdir: "./results_mki67_class/"
 target: "MKI67"
 task: "classification"

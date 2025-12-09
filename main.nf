@@ -14,10 +14,17 @@ workflow {
         .splitCsv(header: true, sep: ',')
         .map { row ->
             tuple(
-                row.feature_extractor,
-                file(row.features_dir)
+                row.patch_encoder,
+                row.slide_encoder,
+                row.patch_size,
+                row.mag,
+                row.batch_size,
+                row.overlap
             )
         }
+    feature_paths = features.map { row ->
+        tuple( row[1], file("${params.features_dir}${row[3]}x_${row[2]}px_${row[5]}px_overlap/slide_features_${row[1]}/"))
+    }
     script_import_features = Channel.value(file("./linear_probing/import_features.py"))
     script_grid_search_classification = Channel.value(file("./linear_probing/grid_search_classification.py"))
     script_grid_search_regression = Channel.value(file("./linear_probing/grid_search_regression.py"))
@@ -26,7 +33,7 @@ workflow {
     script_boxplot_r2 = Channel.value(file("./linear_probing/boxplot_r2.R"))
     script_boxplot_auc = Channel.value(file("./linear_probing/boxplot_auc.R"))
 
-    import_features(dataset, params.target, features, script_import_features)
+    import_features(dataset, params.target, feature_paths, script_import_features)
     grid_search_workflow(import_features.out.dataset,
         script_grid_search_classification, script_grid_search_regression,
         script_scatterplot, script_roc_auc_curve)
